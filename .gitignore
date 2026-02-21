@@ -7,6 +7,7 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+*~
 
 # Environment
 .env
@@ -23,3 +24,12 @@ venv/
 dist/
 build/
 *.egg-info/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+scratch/
