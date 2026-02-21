@@ -252,6 +252,36 @@ Score = α × Relevance + β × TimeDecay + γ × Importance + δ × Coherence
 
 ## 待补充论文
 
+### 双塔模型优化
+
+#### One Backpropagation in Two Tower Recommendation Models
+- **发表**: arXiv 2024-10-10
+- **链接**: https://arxiv.org/abs/2403.18227
+- **主题**: 双塔模型的反向传播优化
+- **相关性**: ⭐⭐ 偏向工程优化
+
+#### Graph Neural Network Recommendation with Dual Tower
+- **发表**: Nature Scientific Reports, 2024-02-15
+- **链接**: https://www.nature.com/articles/s41598-024-54376-3
+- **主题**: 图神经网络 + 双塔架构
+- **相关性**: ⭐⭐ 图结构增强召回
+
+#### Contrastive Learning-enhanced Personalized Interaction Dual Tower
+- **发表**: PLOS ONE, 2025-10-23
+- **链接**: https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0332894
+- **主题**: 对比学习 + 个性化双塔
+- **相关性**: ⭐⭐⭐ 个性化交互设计
+
+#### A Dual Augmented Two-tower Model (DAT)
+- **发表**: KDD DLP Workshop, 2021
+- **链接**: https://dlp-kdd.github.io/assets/pdf/DLP-KDD_2021_paper_4.pdf
+- **主题**: 工业级双塔召回模型
+- **相关性**: ⭐⭐⭐ 大规模系统实践
+
+---
+
+### 经典推荐系统论文（待整理）
+
 - [ ] YouTube 推荐系统（双塔召回 + DNN 精排）
 - [ ] 阿里巴巴电商推荐架构
 - [ ] 字节跳动推荐系统
