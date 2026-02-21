@@ -1,0 +1,16 @@
+# Ignore common files
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+scratch/
