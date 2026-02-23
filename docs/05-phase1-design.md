@@ -24,7 +24,7 @@
 │        │         └────────────┘       └──────────┘        │     │
 │        │                                                   │     │
 │        └──────────── 记忆存储层（Markdown 文件）─────────────┘     │
-│          memory/daily/    memory/insights.md    memory/tags.json  │
+│          memory/daily/    memory/facts.md       memory/tags.json  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -39,8 +39,9 @@ memory/
 │   ├── 2026-02-22-001.md      # segment: topic + facts + tags
 │   ├── 2026-02-22-002.md
 │   └── ...
-├── insights.md                # 事实层（Mem0 CRUD 自动维护）
+├── facts.md                   # 事实层（Mem0 CRUD 自动维护的原子事实）
 ├── projects.md                # 项目追踪
+│   注: insights.md 是用户手工维护的个人洞察笔记，不在本系统管理范围内
 ├── tags.json                  # 标签索引（倒排映射）
 └── USER.md                    # 用户画像摘要（定期异步更新）
 ```
@@ -51,7 +52,7 @@ memory/
 |------|------|------|---------|---------|
 | **日志层** daily/ | 原始对话记录 | Session-level | 每次对话 | SeCom: 全量历史作为源数据保留 |
 | **分段层** segments/ | 去噪后的主题段落 | Segment-level | 每次对话后异步 | SeCom: Segment-level 显著优于 Session-level |
-| **事实层** insights.md | 原子事实集合 | Fact-level | CRUD 动态维护 | Mem0: 1,764 tokens 达到全量 91.7% 效果 |
+| **事实层** facts.md | 系统自动维护的原子事实 | Fact-level | CRUD 动态维护 | Mem0: 1,764 tokens 达到全量 91.7% 效果 |
 
 ## 三、记忆写入管线（Write Pipeline）
 
@@ -82,11 +83,11 @@ memory/
 
 对每条候选事实 f:
 
-1. **语义匹配**: 在 insights.md 中找 top-5 最相似条目
+1. **语义匹配**: 在 facts.md 中找 top-5 最相似条目
    - Phase 1: 关键词重叠度 + LLM 判断
    - Phase 2: 换向量语义检索
 2. **分类操作**: LLM 判断 f 与匹配项的关系
-   - 无相似项 → **ADD**（新增到 insights.md）
+   - 无相似项 → **ADD**（新增到 facts.md）
    - 存在矛盾 → **DELETE** 旧条目 + **ADD** 新条目
    - 信息增强且更丰富 → **UPDATE**（替换旧条目）
    - 重复信息 → **NOOP**
@@ -95,7 +96,7 @@ memory/
 ### Step 5: 画像刷新（低频）
 
 - **频率**: 每周一次 或手动触发
-- **输入**: 最近 7 天的 insights.md 变更
+- **输入**: 最近 7 天的 facts.md 变更
 - **方式**: LLM 总结用户兴趣/偏好/项目状态变化
 - **输出**: 更新 USER.md 对应部分
 
@@ -112,16 +113,16 @@ memory/
 | 路径 | 策略 | 数据源 | 候选数 |
 |------|------|--------|-------|
 | **时间路径** | 最近 3 天的所有 Segment，按时间倒序 | segments/ | ~10 条 |
-| **标签路径** | 从 Q 提取关键词 → 查 tags.json 倒排索引 | tags.json → segments/ + insights.md | ~5 条 |
-| **文件路径** | 优先检索 insights.md 高优先级事实 + projects.md 活跃项目 | insights.md, projects.md | ~3 条 |
-| **文本搜索** | ripgrep 在 segments/ + insights.md 中全文匹配 | segments/, insights.md | ~5 条 |
+| **标签路径** | 从 Q 提取关键词 → 查 tags.json 倒排索引 | tags.json → segments/ + facts.md | ~5 条 |
+| **文件路径** | 优先检索 facts.md 高优先级事实 + projects.md 活跃项目 | facts.md, projects.md | ~3 条 |
+| **文本搜索** | ripgrep 在 segments/ + facts.md 中全文匹配 | segments/, facts.md | ~5 条 |
 
 ### 轻量排序
 
 ```python
 score = 标签匹配度 × 0.4
       + 时间衰减   × 0.3    # 半衰期 7 天
-      + 文件优先级 × 0.3    # insights > segments > daily
+      + 文件优先级 × 0.3    # facts > segments > daily
 ```
 
 - **约束**: Top-K（K=5~10），总 tokens < 1000
@@ -147,16 +148,16 @@ Mem0g（Graph Memory）已完全开源，在 mem0ai/mem0 仓库中。
 Kuzu 嵌入式方案零外部依赖，适合千级数据的原型验证。
 ```
 
-### 5.2 insights.md 条目格式
+### 5.2 facts.md 条目格式
 
 ```markdown
 ## 活跃事实
 
-- [insight-050] **OpenClaw 记忆管理**: 已有 memory-manager skill，
+- [fact-050] **OpenClaw 记忆管理**: 已有 memory-manager skill，
   支持归档/检索/标签，但缺少 CRUD 更新和语义检索
   `tags: [OpenClaw, memory-manager]` `updated: 2026-02-22` `source: seg-2026-02-22-002`
 
-- [insight-051] **Mem0g 技术选型**: 千级数据场景推荐 Kuzu 嵌入式，
+- [fact-051] **Mem0g 技术选型**: 千级数据场景推荐 Kuzu 嵌入式，
   Phase 2 再考虑 Neo4j
   `tags: [Mem0, Kuzu, 技术选型]` `created: 2026-02-22` `source: seg-2026-02-22-001`
 
@@ -176,15 +177,15 @@ Kuzu 嵌入式方案零外部依赖，适合千级数据的原型验证。
   },
   "index": {
     "SeCom": {
-      "insights": ["insight-023", "insight-045"],
+      "facts": ["fact-023", "fact-045"],
       "segments": ["2026-02-21-003", "2026-02-20-001"]
     },
     "推荐系统": {
-      "insights": ["insight-001", "insight-012"],
+      "facts": ["fact-001", "fact-012"],
       "segments": ["2026-02-22-001"]
     },
     "OpenClaw": {
-      "insights": ["insight-050"],
+      "facts": ["fact-050"],
       "segments": ["2026-02-22-002", "2026-02-21-005"]
     }
   }
@@ -232,8 +233,8 @@ Step 3.5: 记忆召回（NEW）
   ├── 执行: memory-manager skill 的 Read Pipeline
   │   ├── 路径1: 时间路径 → segments/ 最近 3 天
   │   ├── 路径2: 标签路径 → tags.json 倒排索引
-  │   ├── 路径3: 文件路径 → insights.md + projects.md
-  │   └── 路径4: 文本搜索 → ripgrep segments/ + insights.md
+  │   ├── 路径3: 文件路径 → facts.md + projects.md
+  │   └── 路径4: 文本搜索 → ripgrep segments/ + facts.md
   ├── 排序: score = 标签×0.4 + 时间×0.3 + 文件优先级×0.3
   ├── 输出: Top-K 记忆片段（<1000 tokens）
   └── 注入: 作为 System Prompt 的 [相关记忆] 部分
@@ -256,8 +257,8 @@ Step 4: 读 MEMORY.md（长期记忆索引，仅主会话）
 2. 运行 scripts/recall_memory.py --query "Q的关键词"
    - 时间路径: 列出 segments/ 最近 3 天文件
    - 标签路径: 在 tags.json 中匹配关键词
-   - 文件路径: 读取 insights.md 中匹配的条目
-   - 文本搜索: ripgrep 在 segments/ + insights.md 中搜索
+   - 文件路径: 读取 facts.md 中匹配的条目
+   - 文本搜索: ripgrep 在 segments/ + facts.md 中搜索
 3. 对候选结果加权排序，取 Top-5（<1000 tokens）
 4. 将结果注入 System Prompt：
 
@@ -287,7 +288,7 @@ Step 4: 读 MEMORY.md（长期记忆索引，仅主会话）
 
 ```
 | 用户问         | 优先读取                    |
-| "分身项目"     | insights.md (#AI/分身)      |
+| "分身项目"     | facts.md (#AI/分身)         |
 | "上次/继续讨论" | 最近 3 天日志（倒序）         |
 ```
 
@@ -297,7 +298,7 @@ Phase 1 的四路召回**替代**这个手工映射表，将其自动化：
 |------------|-------------------|
 | 按关键词手工匹配文件 | 标签路径自动匹配 tags.json |
 | "最近 3 天日志倒序" | 时间路径自动读取 segments/ |
-| "insights.md 标签筛选" | 文件路径 + 标签路径联合检索 |
+| "facts.md 标签筛选" | 文件路径 + 标签路径联合检索 |
 | 按优先级顺序尝试 | 四路并行 + 加权排序，一次完成 |
 
 #### 上下文注入格式
@@ -314,7 +315,7 @@ Phase 1 的四路召回**替代**这个手工映射表，将其自动化：
 1. [2026-02-22] Mem0g 已开源，支持 Neo4j/Memgraph/Kuzu/Neptune
    来源: seg-2026-02-22-001 | 标签: Mem0, 图记忆
 2. [2026-02-21] 分身推荐系统采用两层检索架构，第一层四路规则召回
-   来源: insight-042 | 标签: 推荐系统, 架构
+   来源: fact-042 | 标签: 推荐系统, 架构
 3. ...
 
 [近期上下文]
@@ -333,7 +334,7 @@ Phase 1 的四路召回**替代**这个手工映射表，将其自动化：
 | 关键词提取 | < 50ms | 纯规则，正则 + 停用词过滤 |
 | 时间路径 | < 100ms | 文件系统 ls + 读取 |
 | 标签路径 | < 50ms | JSON 查表 |
-| 文件路径 | < 100ms | 读取 insights.md 匹配段落 |
+| 文件路径 | < 100ms | 读取 facts.md 匹配段落 |
 | 文本搜索 | < 200ms | ripgrep 全文检索 |
 | 排序 + 截断 | < 50ms | 内存计算 |
 | **总计** | **< 550ms** | 远低于 2s 预算 |
@@ -347,7 +348,7 @@ Phase 1 的四路召回**替代**这个手工映射表，将其自动化：
 | **检索延迟** | < 2s | 计时：四路并行 + 排序总耗时 |
 | **Token 效率** | < 1000 tokens | 统计 Top-K 拼接后的 token 数 |
 | **召回相关性** | > 80% | 人工评估：10 次对话中 Top-5 结果是否相关 |
-| **CRUD 准确率** | > 90% | 人工审核：每周检查 insights.md 的自动变更是否合理 |
+| **CRUD 准确率** | > 90% | 人工审核：每周检查 facts.md 的自动变更是否合理 |
 | **去噪压缩率** | 50%-75% | Segment 原文 vs 去噪后的 token 比 |
 
 ## 八、实施节奏（3 周）
@@ -355,7 +356,7 @@ Phase 1 的四路召回**替代**这个手工映射表，将其自动化：
 | 周次 | 目标 | 交付物 |
 |------|------|--------|
 | **Week 1** | 存储结构 + Write Pipeline 前半 | `memory/` 目录结构、主题分段规则、去噪脚本、Segment 文件生成 |
-| **Week 2** | Write Pipeline 后半 + 标签索引 | insights.md 自动维护、tags.json 倒排索引、CRUD 分类 Prompt |
+| **Week 2** | Write Pipeline 后半 + 标签索引 | facts.md 自动维护、tags.json 倒排索引、CRUD 分类 Prompt |
 | **Week 3** | Read Pipeline + 排序 + 集成 | 四路召回实现、加权排序、OpenClaw Agent 集成、端到端测试 |
 
 ## 九、待讨论问题
@@ -365,7 +366,7 @@ Phase 1 的四路召回**替代**这个手工映射表，将其自动化：
 3. **CRUD 的 Phase 1 语义匹配**：关键词重叠度足够吗？还是一开始就需要 embedding？
 4. **排序权重**：0.4/0.3/0.3 的初始分配是否合理？文本搜索路径权重如何处理？
 5. **图检索（Mem0g）何时引入**：Phase 1 末尾还是 Phase 2？千级数据是否值得？
-6. **insights.md 的容量上限**：事实条目增长到多少时需要考虑分文件或归档？
+6. **facts.md 的容量上限**：事实条目增长到多少时需要考虑分文件或归档？
 7. **空召回处理**：四路都没有结果时，回退到最近记忆？还是返回空？
 
 ---
